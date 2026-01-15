@@ -53,7 +53,14 @@ class BleService {
     _scanSubscription = FlutterBluePlus.onScanResults.listen(
       (results) {
         for (final result in results) {
-          if (!_devices.contains(result.device)) {
+          // Filter out unknown devices and weak signals
+          final deviceName = result.device.platformName;
+          final rssi = result.rssi;
+
+          // Only show devices with names and good signal strength (RSSI > -90)
+          final isValidDevice = deviceName.isNotEmpty && rssi > -90;
+
+          if (isValidDevice && !_devices.contains(result.device)) {
             _devices.add(result.device);
             _devicesController.add(List.from(_devices));
           }
@@ -69,6 +76,7 @@ class BleService {
     await FlutterBluePlus.startScan(
       timeout: const Duration(seconds: 10),
       androidUsesFineLocation: true,
+      removeIfGone: const Duration(seconds: 5),
     );
 
     // Add already connected devices
