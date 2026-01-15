@@ -1,17 +1,22 @@
 # RC Controller
 
-A professional Bluetooth Low Energy (BLE) RC Controller app for IoT devices built with Flutter.
+A professional Bluetooth Low Energy (BLE) RC Controller app for IoT devices with 4-arm control system built with Flutter.
 
 ## Features
 
 - 🔍 **BLE Device Scanning** - Scan and discover nearby Bluetooth devices
-- 📱 **Modern UI** - Clean, professional dark theme interface
+- 📱 **Modern UI** - Clean, professional dark theme interface with tabbed navigation
 - 🎮 **Intuitive Controls** - D-pad style control layout with haptic feedback
+- 🦾 **4-Arm Control System** - Individual and group control for 4 arms with visual position indicators
 - ⚡ **Real-time Commands** - Send commands instantly via BLE
 - 🔧 **Configurable** - Select which BLE characteristic to use for communication
 - 📝 **Custom Commands** - Send custom text commands to your device
+- 🚨 **Emergency Stop** - Quick stop all operations
 
-## Commands
+## Control Tabs
+
+### Movement Tab
+Basic directional controls for device movement.
 
 | Button | Command | Description |
 |--------|---------|-------------|
@@ -23,21 +28,49 @@ A professional Bluetooth Low Energy (BLE) RC Controller app for IoT devices buil
 | FAST | `+` | Increase speed |
 | SLOW | `-` | Decrease speed |
 
+### Arms Tab
+Control system for 4 independent arms with visual position indicators.
+
+#### Group Controls
+| Group | Commands | Arms Controlled |
+|-------|----------|-----------------|
+| Front Arms | `FRONT_UP`, `FRONT_DOWN` | Arms 1 & 2 |
+| Back Arms | `BACK_UP`, `BACK_DOWN` | Arms 3 & 4 |
+
+#### Individual Arm Controls
+| Arm | Up Command | Down Command | Stop Command |
+|-----|------------|--------------|--------------|
+| Arm 1 | `ARM1_UP` | `ARM1_DOWN` | `ARM1_STOP` |
+| Arm 2 | `ARM2_UP` | `ARM2_DOWN` | `ARM2_STOP` |
+| Arm 3 | `ARM3_UP` | `ARM3_DOWN` | `ARM3_STOP` |
+| Arm 4 | `ARM4_UP` | `ARM4_DOWN` | `ARM4_STOP` |
+
+**Emergency Stop:** `ALL_STOP` - Stops all arm movements immediately
+
 ## Project Structure
 
 ```
 lib/
-├── main.dart                   # App entry point
+├── main.dart                       # App entry point
 ├── app/
-│   └── app.dart                # MaterialApp configuration
+│   └── app.dart                    # MaterialApp configuration
 ├── theme/
-│   └── app_theme.dart          # Dark theme configuration
+│   └── app_theme.dart              # Dark theme configuration
 ├── services/
-│   └── ble_service.dart        # BLE service singleton
+│   └── ble_service.dart            # BLE service singleton
 ├── screens/
-│   ├── home_screen.dart        # Device scanning & selection
-│   └── controller_screen.dart  # RC control interface
+│   ├── home_screen.dart            # Device scanning & selection
+│   └── controller_screen.dart      # Tabbed RC control interface
 └── widgets/
+    ├── widgets.dart                # Barrel export
+    ├── control_button.dart         # Movement control buttons
+    ├── control_pad.dart            # D-pad layout
+    ├── device_card.dart            # Device list item
+    ├── connection_status_bar.dart  # Connection info bar
+    ├── arm_control_button.dart     # Arm up/down buttons
+    ├── arm_position_indicator.dart # Visual arm position display
+    └── arms_control_tab.dart       # Arms control interface
+```
     ├── widgets.dart            # Barrel export
     ├── control_button.dart
     ├── control_pad.dart

@@ -14,13 +14,22 @@ class ControllerScreen extends StatefulWidget {
   State<ControllerScreen> createState() => _ControllerScreenState();
 }
 
-class _ControllerScreenState extends State<ControllerScreen> {
+class _ControllerScreenState extends State<ControllerScreen>
+    with SingleTickerProviderStateMixin {
   final TextEditingController _commandController = TextEditingController();
   String? _lastCommand;
+  late TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+  }
 
   @override
   void dispose() {
     _commandController.dispose();
+    _tabController.dispose();
     super.dispose();
   }
 
@@ -195,26 +204,77 @@ class _ControllerScreenState extends State<ControllerScreen> {
               onSettings: _showCharacteristicSelector,
               onDisconnect: _disconnect,
             ),
-            Expanded(
-              child: Center(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(vertical: 24),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      ControlPad(
-                        onCommand: _sendCommand,
-                        onStop: _stopMovement,
-                      ),
-                      const SizedBox(height: 32),
-                      _buildCommandInput(),
-                      if (_lastCommand != null) ...[
-                        const SizedBox(height: 16),
-                        _buildLastCommandIndicator(),
-                      ],
-                    ],
-                  ),
+            // Tab Bar
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: AppTheme.surfaceColor,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: AppTheme.primaryColor.withAlpha(50),
+                  width: 1,
                 ),
+              ),
+              child: TabBar(
+                controller: _tabController,
+                indicator: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [AppTheme.primaryColor, AppTheme.accentColor],
+                  ),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                indicatorSize: TabBarIndicatorSize.tab,
+                dividerColor: Colors.transparent,
+                labelColor: Colors.white,
+                unselectedLabelColor: AppTheme.textSecondary,
+                labelStyle: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                  letterSpacing: 1,
+                ),
+                tabs: const [
+                  Tab(
+                    icon: Icon(Icons.gamepad_rounded),
+                    text: 'MOVEMENT',
+                  ),
+                  Tab(
+                    icon: Icon(Icons.precision_manufacturing_rounded),
+                    text: 'ARMS',
+                  ),
+                ],
+              ),
+            ),
+            // Tab Views
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  // Movement Tab
+                  Center(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(vertical: 24),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          ControlPad(
+                            onCommand: _sendCommand,
+                            onStop: _stopMovement,
+                          ),
+                          const SizedBox(height: 32),
+                          _buildCommandInput(),
+                          if (_lastCommand != null) ...[
+                            const SizedBox(height: 16),
+                            _buildLastCommandIndicator(),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+                  // Arms Tab
+                  ArmsControlTab(
+                    onCommand: _sendCommand,
+                  ),
+                ],
               ),
             ),
           ],
