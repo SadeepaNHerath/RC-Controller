@@ -1,19 +1,20 @@
 import 'package:flutter/material.dart';
+
 import '../theme/app_theme.dart';
 
 class ConnectionStatusBar extends StatelessWidget {
-  final String deviceName;
-  final String? characteristicId;
-  final VoidCallback onSettings;
-  final VoidCallback onDisconnect;
-
   const ConnectionStatusBar({
     super.key,
     required this.deviceName,
-    this.characteristicId,
-    required this.onSettings,
+    required this.subtitle,
     required this.onDisconnect,
+    this.onSettings,
   });
+
+  final String deviceName;
+  final String subtitle;
+  final VoidCallback onDisconnect;
+  final VoidCallback? onSettings;
 
   @override
   Widget build(BuildContext context) {
@@ -24,16 +25,10 @@ class ConnectionStatusBar extends StatelessWidget {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            AppTheme.cardColor,
-            AppTheme.surfaceColor,
-          ],
+          colors: [AppTheme.cardColor, AppTheme.surfaceColor],
         ),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppTheme.successColor.withAlpha(100),
-          width: 1,
-        ),
+        border: Border.all(color: AppTheme.successColor.withAlpha(100)),
         boxShadow: [
           BoxShadow(
             color: AppTheme.successColor.withAlpha(30),
@@ -77,13 +72,9 @@ class ConnectionStatusBar extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  characteristicId != null
-                      ? 'TX: ${characteristicId!.substring(4, 8).toUpperCase()}'
-                      : 'No TX selected',
-                  style: TextStyle(
-                    color: characteristicId != null
-                        ? AppTheme.successColor
-                        : AppTheme.warningColor,
+                  subtitle,
+                  style: const TextStyle(
+                    color: AppTheme.successColor,
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
                   ),
@@ -91,12 +82,13 @@ class ConnectionStatusBar extends StatelessWidget {
               ],
             ),
           ),
-          IconButton(
-            onPressed: onSettings,
-            icon: const Icon(Icons.settings_outlined),
-            color: AppTheme.textSecondary,
-            tooltip: 'Settings',
-          ),
+          if (onSettings != null)
+            IconButton(
+              onPressed: onSettings,
+              icon: const Icon(Icons.settings_outlined),
+              color: AppTheme.textSecondary,
+              tooltip: 'TX characteristic',
+            ),
           IconButton(
             onPressed: onDisconnect,
             icon: const Icon(Icons.bluetooth_disabled),

@@ -76,6 +76,7 @@ class _ControlButtonState extends State<ControlButton>
     final buttonColor = widget.color ?? AppTheme.primaryColor;
 
     return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTapDown: _handleTapDown,
       onTapUp: _handleTapUp,
       onTapCancel: _handleTapCancel,

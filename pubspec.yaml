@@ -1,17 +1,19 @@
-name: rc_controller
-description: "A Bluetooth Low Energy RC Controller app for IoT devices."
-publish_to: 'none'
+name: helmrc
+description: HelmRC — a BLE and Android Classic RC controller by KNURDZ Community.
+publish_to: "none"
 version: 1.0.0+1
 
 environment:
-  sdk: '>=3.3.0 <4.0.0'
+  sdk: ">=3.3.0 <4.0.0"
 
 dependencies:
   flutter:
     sdk: flutter
-  cupertino_icons: ^1.0.6
   flutter_blue_plus: ^1.32.0
   permission_handler: ^11.3.1
+  wakelock_plus: ^1.2.8
+  bluetooth_serial_android: ^1.1.2
+  shared_preferences: ^2.3.2
 
 dev_dependencies:
   flutter_test:

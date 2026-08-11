@@ -1,151 +1,95 @@
-# RC Controller
+# HelmRC
 
-A professional Bluetooth Low Energy (BLE) RC Controller app for IoT devices with 4-arm control system built with Flutter.
+A Bluetooth RC controller by **KNURDZ Community**. HelmRC drives **BLE UART** cars on Android and iOS, and **Bluetooth Classic serial (SPP)** cars on Android, when the car speaks a selected command profile.
+
+It does **not** claim every branded toy car. Encrypted or proprietary protocols (many store-bought RC toys) will not work. It covers the cars people can actually open: ESP32 BLE UART, Arduino + HC-05/HC-06, and a user-defined serial map.
 
 ## Features
 
-- 🔍 **BLE Device Scanning** - Scan and discover nearby Bluetooth devices
-- 📱 **Modern UI** - Clean, professional dark theme interface with tabbed navigation
-- 🎮 **Intuitive Controls** - D-pad style control layout with haptic feedback
-- 🦾 **4-Arm Control System** - Individual and group control for 4 arms with visual position indicators
-- ⚡ **Real-time Commands** - Send commands instantly via BLE
-- 🔧 **Configurable** - Select which BLE characteristic to use for communication
-- 📝 **Custom Commands** - Send custom text commands to your device
-- 🚨 **Emergency Stop** - Quick stop all operations
+- User-selectable **BLE** or **Classic** radio (Classic is Android-only; iOS stays BLE)
+- Command profiles: HelmRC, Arduino UART, Numeric, and Custom
+- BLE scan, connect, and TX characteristic selection
+- Classic paired-first device list and RFCOMM/SPP writes
+- Hold-to-move driving with automatic stop on release
+- 4-arm individual and group controls (sent only if the profile maps them)
+- Emergency stop always visible while connected
+- Fail-safe stop on disconnect, back navigation, and app backgrounding
+- Portrait lock, keep-awake while controlling, and signal-strength BLE list
 
-## Control Tabs
+## Compatibility
 
-### Movement Tab
-Basic directional controls for device movement.
+| Radio | Platforms | Typical hardware |
+|-------|-----------|------------------|
+| BLE UART | Android, iOS | ESP32 Nordic UART / similar GATT TX |
+| Classic SPP | Android only | HC-05, HC-06, Arduino Bluetooth serial |
 
-| Button | Command | Description |
-|--------|---------|-------------|
-| FWD | `F` | Move forward |
-| BWD | `B` | Move backward |
-| LEFT | `L` | Turn left |
-| RIGHT | `R` | Turn right |
-| STOP | `S` | Stop movement |
-| FAST | `+` | Increase speed |
-| SLOW | `-` | Decrease speed |
+Pick a **car profile** so the pads send bytes the firmware expects. Unmapped buttons are skipped instead of sending HelmRC strings to a car that does not understand them.
 
-### Arms Tab
-Control system for 4 independent arms with visual position indicators.
+## Command profiles
 
-#### Group Controls
-| Group | Commands | Arms Controlled |
-|-------|----------|-----------------|
-| Front Arms | `FRONT_UP`, `FRONT_DOWN` | Arms 1 & 2 |
-| Back Arms | `BACK_UP`, `BACK_DOWN` | Arms 3 & 4 |
+Same pads, different wire bytes:
 
-#### Individual Arm Controls
-| Arm | Up Command | Down Command | Stop Command |
-|-----|------------|--------------|--------------|
-| Arm 1 | `ARM1_UP` | `ARM1_DOWN` | `ARM1_STOP` |
-| Arm 2 | `ARM2_UP` | `ARM2_DOWN` | `ARM2_STOP` |
-| Arm 3 | `ARM3_UP` | `ARM3_DOWN` | `ARM3_STOP` |
-| Arm 4 | `ARM4_UP` | `ARM4_DOWN` | `ARM4_STOP` |
+| Profile | Forward | Notes |
+|---------|---------|--------|
+| HelmRC | `F` | Current map, no newline |
+| Arduino UART | `F\n` | Common HC-05 sketches: `F/B/L/R/S/+/-` plus newline |
+| Numeric | `1\n` | Hobby `1/2/3/4/0` sketches |
+| Custom | user-defined | Edit each button locally; optional newline |
 
-**Emergency Stop:** `ALL_STOP` - Stops all arm movements immediately
+### HelmRC logical pads
 
-## Project Structure
+| Button | Logical key | HelmRC bytes |
+|--------|-------------|--------------|
+| FWD | `F` | `F` while held; `S` on release |
+| BWD | `B` | `B` while held; `S` on release |
+| LEFT | `L` | `L` while held; `S` on release |
+| RIGHT | `R` | `R` while held; `S` on release |
+| STOP | `S` | Immediate halt |
+| FAST | `+` | Speed up |
+| SLOW | `-` | Slow down |
 
-```
-lib/
-├── main.dart                       # App entry point
-├── app/
-│   └── app.dart                    # MaterialApp configuration
-├── theme/
-│   └── app_theme.dart              # Dark theme configuration
-├── services/
-│   └── ble_service.dart            # BLE service singleton
-├── screens/
-│   ├── home_screen.dart            # Device scanning & selection
-│   └── controller_screen.dart      # Tabbed RC control interface
-└── widgets/
-    ├── widgets.dart                # Barrel export
-    ├── control_button.dart         # Movement control buttons
-    ├── control_pad.dart            # D-pad layout
-    ├── device_card.dart            # Device list item
-    ├── connection_status_bar.dart  # Connection info bar
-    ├── arm_control_button.dart     # Arm up/down buttons
-    ├── arm_position_indicator.dart # Visual arm position display
-    └── arms_control_tab.dart       # Arms control interface
-```
-    ├── widgets.dart            # Barrel export
-    ├── control_button.dart
-    ├── control_pad.dart
-    ├── device_card.dart
-    └── connection_status_bar.dart
-```
+### Arms (HelmRC profile)
 
-## Setup
+| Control | Up | Down | Release |
+|---------|----|------|---------|
+| Front (1 & 2) | `FRONT_UP` | `FRONT_DOWN` | `ARM1_STOP`, `ARM2_STOP` |
+| Back (3 & 4) | `BACK_UP` | `BACK_DOWN` | `ARM3_STOP`, `ARM4_STOP` |
+| Arm n | `ARMn_UP` | `ARMn_DOWN` | `ARMn_STOP` |
 
-### Prerequisites
+Emergency stop sends the profile’s fail-safe mapping (`S` then `ALL_STOP` on HelmRC; stop only on Numeric).
 
-- Flutter SDK (>=3.3.0)
-- Android Studio / Xcode for mobile development
+## Run
 
-### Android Configuration
-
-Add these permissions to `android/app/src/main/AndroidManifest.xml`:
-
-```xml
-<uses-permission android:name="android.permission.BLUETOOTH" />
-<uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
-<uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
-<uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
-<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
-<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
-```
-
-Ensure `minSdkVersion` is 21 or higher in `android/app/build.gradle`:
-
-```groovy
-android {
-    defaultConfig {
-        minSdkVersion 21
-    }
-}
-```
-
-### iOS Configuration
-
-Add these entries to `ios/Runner/Info.plist`:
-
-```xml
-<key>NSBluetoothAlwaysUsageDescription</key>
-<string>This app needs Bluetooth to communicate with your RC device</string>
-<key>NSBluetoothPeripheralUsageDescription</key>
-<string>This app needs Bluetooth to communicate with your RC device</string>
-<key>NSLocationWhenInUseUsageDescription</key>
-<string>This app needs location access for Bluetooth scanning</string>
-```
-
-## Installation
+Requires a physical Android or iOS device with Bluetooth. Simulators do not support BLE or Classic well. Classic serial needs Android 8+ (API 26).
 
 ```bash
-# Get dependencies
 flutter pub get
-
-# Run on connected device
+flutter devices
 flutter run
 ```
 
-## Building
+## Build
 
 ```bash
-# Build APK for Android
 flutter build apk --release
-
-# Build for iOS
 flutter build ios --release
 ```
 
-## Dependencies
+## Project structure
 
-- [flutter_blue_plus](https://pub.dev/packages/flutter_blue_plus) - BLE communication
-- [permission_handler](https://pub.dev/packages/permission_handler) - Runtime permissions
+```
+lib/
+├── main.dart
+├── app/
+├── theme/app_theme.dart
+├── commands/rc_commands.dart
+├── profiles/
+├── radio/
+├── models/
+├── screens/
+└── widgets/
+```
 
 ## License
 
-This project is part of the StairDoc IoT Project.
+Developed by KNURDZ Community.

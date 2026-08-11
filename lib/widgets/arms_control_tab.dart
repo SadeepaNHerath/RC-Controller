@@ -1,79 +1,69 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+
+import '../commands/rc_commands.dart';
 import '../theme/app_theme.dart';
-import '../widgets/arm_control_button.dart';
-import '../widgets/arm_position_indicator.dart';
+import 'arm_control_button.dart';
+import 'arm_position_indicator.dart';
 
 class ArmsControlTab extends StatefulWidget {
-  final Function(String) onCommand;
-
   const ArmsControlTab({
     super.key,
     required this.onCommand,
   });
+
+  final Future<void> Function(String command) onCommand;
 
   @override
   State<ArmsControlTab> createState() => _ArmsControlTabState();
 }
 
 class _ArmsControlTabState extends State<ArmsControlTab> {
-  // Simulated arm positions (0.0 to 1.0)
-  double _arm1Position = 0.0;
-  double _arm2Position = 0.0;
-  double _arm3Position = 0.0;
-  double _arm4Position = 0.0;
+  final List<double> _positions = [0, 0, 0, 0];
+  Timer? _motionTimer;
+  List<int> _activeArms = [];
+  int _direction = 0;
 
-  void _sendCommand(String command) {
-    widget.onCommand(command);
+  @override
+  void dispose() {
+    _motionTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _send(String command) async {
     HapticFeedback.lightImpact();
+    await widget.onCommand(command);
+  }
 
-    // Simulate position changes (in real app, this would come from device feedback)
+  void _beginMotion(List<int> arms, int direction) {
+    _motionTimer?.cancel();
+    _activeArms = arms;
+    _direction = direction;
+    _tickMotion();
+    _motionTimer = Timer.periodic(
+      const Duration(milliseconds: 120),
+      (_) => _tickMotion(),
+    );
+  }
+
+  void _tickMotion() {
+    if (!mounted) return;
     setState(() {
-      if (command.contains('ARM1_UP')) {
-        _arm1Position = (_arm1Position + 0.1).clamp(0.0, 1.0);
-      }
-      if (command.contains('ARM1_DOWN')) {
-        _arm1Position = (_arm1Position - 0.1).clamp(0.0, 1.0);
-      }
-      if (command.contains('ARM2_UP')) {
-        _arm2Position = (_arm2Position + 0.1).clamp(0.0, 1.0);
-      }
-      if (command.contains('ARM2_DOWN')) {
-        _arm2Position = (_arm2Position - 0.1).clamp(0.0, 1.0);
-      }
-      if (command.contains('ARM3_UP')) {
-        _arm3Position = (_arm3Position + 0.1).clamp(0.0, 1.0);
-      }
-      if (command.contains('ARM3_DOWN')) {
-        _arm3Position = (_arm3Position - 0.1).clamp(0.0, 1.0);
-      }
-      if (command.contains('ARM4_UP')) {
-        _arm4Position = (_arm4Position + 0.1).clamp(0.0, 1.0);
-      }
-      if (command.contains('ARM4_DOWN')) {
-        _arm4Position = (_arm4Position - 0.1).clamp(0.0, 1.0);
-      }
-
-      if (command.contains('FRONT_UP')) {
-        _arm1Position = (_arm1Position + 0.1).clamp(0.0, 1.0);
-        _arm2Position = (_arm2Position + 0.1).clamp(0.0, 1.0);
-      }
-      if (command.contains('FRONT_DOWN')) {
-        _arm1Position = (_arm1Position - 0.1).clamp(0.0, 1.0);
-        _arm2Position = (_arm2Position - 0.1).clamp(0.0, 1.0);
-      }
-      if (command.contains('BACK_UP')) {
-        _arm3Position = (_arm3Position + 0.1).clamp(0.0, 1.0);
-        _arm4Position = (_arm4Position + 0.1).clamp(0.0, 1.0);
-      }
-      if (command.contains('BACK_DOWN')) {
-        _arm3Position = (_arm3Position - 0.1).clamp(0.0, 1.0);
-        _arm4Position = (_arm4Position - 0.1).clamp(0.0, 1.0);
-      }
-      if (command.contains('ALL_STOP')) {
-        // Stop all arms
+      for (final index in _activeArms) {
+        _positions[index] =
+            (_positions[index] + (_direction * 0.04)).clamp(0.0, 1.0);
       }
     });
+  }
+
+  Future<void> _endMotion(List<String> stopCommands) async {
+    _motionTimer?.cancel();
+    _motionTimer = null;
+    for (final command in stopCommands) {
+      await _send(command);
+    }
   }
 
   @override
@@ -82,7 +72,6 @@ class _ArmsControlTabState extends State<ArmsControlTab> {
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
-          // Title
           const Text(
             'ARM CONTROLS',
             style: TextStyle(
@@ -93,12 +82,8 @@ class _ArmsControlTabState extends State<ArmsControlTab> {
             ),
           ),
           const SizedBox(height: 24),
-
-          // Group Controls Section
           _buildGroupControls(),
           const SizedBox(height: 32),
-
-          // Individual Arms Section
           const Text(
             'INDIVIDUAL CONTROLS',
             style: TextStyle(
@@ -109,77 +94,64 @@ class _ArmsControlTabState extends State<ArmsControlTab> {
             ),
           ),
           const SizedBox(height: 16),
-
-          // Position Indicators
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              ArmPositionIndicator(
-                label: 'ARM 1',
-                position: _arm1Position,
-                color: AppTheme.primaryColor,
-              ),
-              ArmPositionIndicator(
-                label: 'ARM 2',
-                position: _arm2Position,
-                color: AppTheme.primaryColor,
-              ),
-              ArmPositionIndicator(
-                label: 'ARM 3',
-                position: _arm3Position,
-                color: AppTheme.accentColor,
-              ),
-              ArmPositionIndicator(
-                label: 'ARM 4',
-                position: _arm4Position,
-                color: AppTheme.accentColor,
-              ),
+              for (var i = 0; i < 4; i++)
+                ArmPositionIndicator(
+                  label: 'ARM ${i + 1}',
+                  position: _positions[i],
+                  color: i < 2 ? AppTheme.primaryColor : AppTheme.accentColor,
+                ),
             ],
           ),
           const SizedBox(height: 24),
-
-          // Individual Arm Controls
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              ArmControlButton(
-                label: 'ARM 1',
-                upIcon: Icons.arrow_upward_rounded,
-                downIcon: Icons.arrow_downward_rounded,
-                onUp: () => _sendCommand('ARM1_UP'),
-                onDown: () => _sendCommand('ARM1_DOWN'),
-                onRelease: () => _sendCommand('ARM1_STOP'),
-              ),
-              ArmControlButton(
-                label: 'ARM 2',
-                upIcon: Icons.arrow_upward_rounded,
-                downIcon: Icons.arrow_downward_rounded,
-                onUp: () => _sendCommand('ARM2_UP'),
-                onDown: () => _sendCommand('ARM2_DOWN'),
-                onRelease: () => _sendCommand('ARM2_STOP'),
-              ),
-              ArmControlButton(
-                label: 'ARM 3',
-                upIcon: Icons.arrow_upward_rounded,
-                downIcon: Icons.arrow_downward_rounded,
-                onUp: () => _sendCommand('ARM3_UP'),
-                onDown: () => _sendCommand('ARM3_DOWN'),
-                onRelease: () => _sendCommand('ARM3_STOP'),
-              ),
-              ArmControlButton(
-                label: 'ARM 4',
-                upIcon: Icons.arrow_upward_rounded,
-                downIcon: Icons.arrow_downward_rounded,
-                onUp: () => _sendCommand('ARM4_UP'),
-                onDown: () => _sendCommand('ARM4_DOWN'),
-                onRelease: () => _sendCommand('ARM4_STOP'),
-              ),
+              for (var i = 0; i < 4; i++)
+                ArmControlButton(
+                  label: 'ARM ${i + 1}',
+                  upIcon: Icons.arrow_upward_rounded,
+                  downIcon: Icons.arrow_downward_rounded,
+                  onUp: () {
+                    _beginMotion([i], 1);
+                    _send([
+                      RcCommands.arm1Up,
+                      RcCommands.arm2Up,
+                      RcCommands.arm3Up,
+                      RcCommands.arm4Up,
+                    ][i]);
+                  },
+                  onDown: () {
+                    _beginMotion([i], -1);
+                    _send([
+                      RcCommands.arm1Down,
+                      RcCommands.arm2Down,
+                      RcCommands.arm3Down,
+                      RcCommands.arm4Down,
+                    ][i]);
+                  },
+                  onRelease: () => _endMotion([
+                    [
+                      RcCommands.arm1Stop,
+                      RcCommands.arm2Stop,
+                      RcCommands.arm3Stop,
+                      RcCommands.arm4Stop,
+                    ][i]
+                  ]),
+                ),
             ],
           ),
-          const SizedBox(height: 32),
-
-          // Emergency Stop
-          _buildEmergencyStop(),
+          const SizedBox(height: 24),
+          const Text(
+            'Hold to move. Release to stop. Indicators are estimated.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 12,
+              color: AppTheme.textSecondary,
+            ),
+          ),
         ],
       ),
     );
@@ -195,10 +167,7 @@ class _ArmsControlTabState extends State<ArmsControlTab> {
           colors: [AppTheme.cardColor, AppTheme.surfaceColor],
         ),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppTheme.primaryColor.withAlpha(50),
-          width: 1,
-        ),
+        border: Border.all(color: AppTheme.primaryColor.withAlpha(50)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -214,23 +183,22 @@ class _ArmsControlTabState extends State<ArmsControlTab> {
           ),
           const SizedBox(height: 16),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              // Front Arms Group
               _buildGroupButton(
                 label: 'FRONT ARMS',
                 sublabel: 'Arms 1 & 2',
-                upCommand: 'FRONT_UP',
-                downCommand: 'FRONT_DOWN',
+                upCommand: RcCommands.frontUp,
+                downCommand: RcCommands.frontDown,
+                armIndexes: const [0, 1],
                 color: AppTheme.primaryColor,
               ),
               const SizedBox(width: 16),
-              // Back Arms Group
               _buildGroupButton(
                 label: 'BACK ARMS',
                 sublabel: 'Arms 3 & 4',
-                upCommand: 'BACK_UP',
-                downCommand: 'BACK_DOWN',
+                upCommand: RcCommands.backUp,
+                downCommand: RcCommands.backDown,
+                armIndexes: const [2, 3],
                 color: AppTheme.accentColor,
               ),
             ],
@@ -245,6 +213,7 @@ class _ArmsControlTabState extends State<ArmsControlTab> {
     required String sublabel,
     required String upCommand,
     required String downCommand,
+    required List<int> armIndexes,
     required Color color,
   }) {
     return Expanded(
@@ -253,10 +222,7 @@ class _ArmsControlTabState extends State<ArmsControlTab> {
         decoration: BoxDecoration(
           color: AppTheme.surfaceColor,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: color.withAlpha(100),
-            width: 1,
-          ),
+          border: Border.all(color: color.withAlpha(100)),
         ),
         child: Column(
           children: [
@@ -281,65 +247,25 @@ class _ArmsControlTabState extends State<ArmsControlTab> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                // Up button
-                GestureDetector(
-                  onTapDown: (_) => _sendCommand(upCommand),
-                  onTapUp: (_) =>
-                      _sendCommand('${upCommand.split('_')[0]}_STOP'),
-                  onTapCancel: () =>
-                      _sendCommand('${upCommand.split('_')[0]}_STOP'),
-                  child: Container(
-                    width: 50,
-                    height: 50,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [color, color.withAlpha(200)],
-                      ),
-                      borderRadius: BorderRadius.circular(10),
-                      boxShadow: [
-                        BoxShadow(
-                          color: color.withAlpha(100),
-                          blurRadius: 8,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: const Icon(
-                      Icons.arrow_upward_rounded,
-                      color: Colors.white,
-                      size: 28,
-                    ),
-                  ),
+                _holdButton(
+                  icon: Icons.arrow_upward_rounded,
+                  color: color,
+                  onDown: () {
+                    _beginMotion(armIndexes, 1);
+                    _send(upCommand);
+                  },
+                  onUp: () =>
+                      _endMotion(RcCommands.groupReleaseStops(upCommand)),
                 ),
-                // Down button
-                GestureDetector(
-                  onTapDown: (_) => _sendCommand(downCommand),
-                  onTapUp: (_) =>
-                      _sendCommand('${downCommand.split('_')[0]}_STOP'),
-                  onTapCancel: () =>
-                      _sendCommand('${downCommand.split('_')[0]}_STOP'),
-                  child: Container(
-                    width: 50,
-                    height: 50,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [color.withAlpha(200), color.withAlpha(150)],
-                      ),
-                      borderRadius: BorderRadius.circular(10),
-                      boxShadow: [
-                        BoxShadow(
-                          color: color.withAlpha(80),
-                          blurRadius: 8,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: const Icon(
-                      Icons.arrow_downward_rounded,
-                      color: Colors.white,
-                      size: 28,
-                    ),
-                  ),
+                _holdButton(
+                  icon: Icons.arrow_downward_rounded,
+                  color: color.withAlpha(200),
+                  onDown: () {
+                    _beginMotion(armIndexes, -1);
+                    _send(downCommand);
+                  },
+                  onUp: () =>
+                      _endMotion(RcCommands.groupReleaseStops(downCommand)),
                 ),
               ],
             ),
@@ -349,41 +275,31 @@ class _ArmsControlTabState extends State<ArmsControlTab> {
     );
   }
 
-  Widget _buildEmergencyStop() {
+  Widget _holdButton({
+    required IconData icon,
+    required Color color,
+    required VoidCallback onDown,
+    required VoidCallback onUp,
+  }) {
     return GestureDetector(
-      onTap: () => _sendCommand('ALL_STOP'),
+      onTapDown: (_) => onDown(),
+      onTapUp: (_) => onUp(),
+      onTapCancel: onUp,
       child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 16),
+        width: 50,
+        height: 50,
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [AppTheme.errorColor, Color(0xFFD63447)],
-          ),
-          borderRadius: BorderRadius.circular(16),
+          gradient: LinearGradient(colors: [color, color.withAlpha(200)]),
+          borderRadius: BorderRadius.circular(10),
           boxShadow: [
             BoxShadow(
-              color: AppTheme.errorColor.withAlpha(100),
-              blurRadius: 12,
+              color: color.withAlpha(100),
+              blurRadius: 8,
               offset: const Offset(0, 4),
             ),
           ],
         ),
-        child: const Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.stop_circle, color: Colors.white, size: 28),
-            SizedBox(width: 12),
-            Text(
-              'EMERGENCY STOP',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 2,
-              ),
-            ),
-          ],
-        ),
+        child: Icon(icon, color: Colors.white, size: 28),
       ),
     );
   }

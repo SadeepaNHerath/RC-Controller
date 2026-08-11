@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../theme/app_theme.dart';
 
 class ArmControlButton extends StatefulWidget {
@@ -43,8 +44,10 @@ class _ArmControlButtonState extends State<ArmControlButton> {
         const SizedBox(height: 8),
         // Up button
         GestureDetector(
+          behavior: HitTestBehavior.opaque,
           onTapDown: (_) {
             setState(() => _isUpPressed = true);
+            HapticFeedback.selectionClick();
             widget.onUp();
           },
           onTapUp: (_) {
@@ -92,8 +95,10 @@ class _ArmControlButtonState extends State<ArmControlButton> {
         const SizedBox(height: 8),
         // Down button
         GestureDetector(
+          behavior: HitTestBehavior.opaque,
           onTapDown: (_) {
             setState(() => _isDownPressed = true);
+            HapticFeedback.selectionClick();
             widget.onDown();
           },
           onTapUp: (_) {

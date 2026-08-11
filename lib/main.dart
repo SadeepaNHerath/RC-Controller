@@ -1,25 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'app/app.dart';
 
-void main() {
+import 'app/app.dart';
+import 'theme/app_theme.dart';
+
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Lock to portrait mode for better control experience
-  SystemChrome.setPreferredOrientations([
+  await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
-    DeviceOrientation.portraitDown,
   ]);
 
-  // Set system UI overlay style
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
       statusBarIconBrightness: Brightness.light,
-      systemNavigationBarColor: Color(0xFF1A1A2E),
+      systemNavigationBarColor: AppTheme.backgroundColor,
       systemNavigationBarIconBrightness: Brightness.light,
     ),
   );
 
-  runApp(const RCControllerApp());
+  runApp(const HelmRcApp());
 }
