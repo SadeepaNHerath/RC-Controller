@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -30,6 +31,13 @@ class BleService {
   BluetoothCharacteristic? get writeCharacteristic => _writeCharacteristic;
 
   Future<bool> requestPermissions() async {
+    if (Platform.isIOS || Platform.isMacOS) {
+      // bluetoothScan / bluetoothConnect are Android-only and always fail on iOS.
+      // CoreBluetooth also prompts on first FlutterBluePlus use.
+      final bluetooth = await Permission.bluetooth.request();
+      return bluetooth.isGranted || bluetooth.isLimited;
+    }
+
     final locationStatus = await Permission.location.request();
     final bluetoothScan = await Permission.bluetoothScan.request();
     final bluetoothConnect = await Permission.bluetoothConnect.request();
