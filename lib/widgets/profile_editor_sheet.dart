@@ -68,15 +68,15 @@ class _ProfileEditorSheetState extends State<_ProfileEditorSheet> {
   @override
   Widget build(BuildContext context) {
     final bottom = MediaQuery.of(context).viewInsets.bottom;
-    return Container(
-      height: MediaQuery.of(context).size.height * 0.85,
-      margin: EdgeInsets.only(bottom: bottom),
-      decoration: const BoxDecoration(
-        color: AppTheme.surfaceColor,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      child: Column(
-        children: [
+    return Material(
+      color: AppTheme.surfaceColor,
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      clipBehavior: Clip.antiAlias,
+      child: Container(
+        height: MediaQuery.of(context).size.height * 0.85,
+        margin: EdgeInsets.only(bottom: bottom),
+        child: Column(
+          children: [
           const SizedBox(height: 12),
           Container(
             width: 40,
@@ -139,17 +139,18 @@ class _ProfileEditorSheetState extends State<_ProfileEditorSheet> {
               },
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
-            child: SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _save,
-                child: const Text('Save profile'),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _save,
+                  child: const Text('Save profile'),
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
